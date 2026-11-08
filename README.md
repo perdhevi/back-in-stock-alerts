@@ -1,6 +1,6 @@
 # back-in-stock-alerts
 
-**Live:** TODO (deploy pending) · **Admin:** `/admin` · **Embed:** `/embed?sku=TEE-ORG-WHT-M`
+**Live URL:** none (optional in the brief); the image was run against the hosted test harness, results below. · **Admin:** `/admin` · **Embed:** `/embed?sku=TEE-ORG-WHT-M`
 
 Customers leave their email on a sold-out product; when it really comes back, they get one good-looking email. The service takes the sign-ups, listens for stock webhooks, double-checks every restock with the stock API, and sends exactly one email per request, through duplicate webhooks, fake restocks, failing email sends and restarts.
 
@@ -8,7 +8,9 @@ Customers leave their email on a sold-out product; when it really comes back, th
 |---|---|---|
 | ![Embed form](docs/embed.jpg) | ![Email](docs/email.jpg) | ![Admin](docs/admin.jpg) |
 
-Harness run against the challenge harness (local copy, simulated store every 10s for ~12 minutes): 18 duplicate webhook deliveries, 3 phantom restocks, a forged-secret webhook, 15 injected email failures (HTTP 500), a graceful restart, two `docker kill`s during retry backoff and four redeploys onto the same volume. Result: 57 requests, 46 notified, **46 accepted emails, each matched one-to-one to a request; no duplicates, no one left waiting on an in-stock product**, 0 failed. Inbox: [`docs/harness-inbox.jpg`](docs/harness-inbox.jpg). Checked with `scripts/verify-harness.mjs` (see [Verifying a run](#verifying-a-run)).
+**Hosted harness run** (the official test server, app reached through a temporary tunnel, 10m44s): the simulated store plus 6 duplicate webhook deliveries, 3 phantom restocks, forged-secret webhooks, 5 injected email failures (HTTP 500) and a `docker kill` of the app while one email was mid-send and five were waiting to retry. Result: **19 notified requests, 19 accepted emails, matched per customer; no duplicates; nobody left waiting on an in-stock item; 0 failed.** The email that was mid-send at the kill had already been accepted; after the restart it was resent with the same idempotency key and the harness shows it as `deduped (idempotency key)`, so the customer still got one. Every webhook got a 2xx. Inbox: [`docs/harness-inbox.jpg`](docs/harness-inbox.jpg).
+
+**Local harness run** (the challenge repo's `harness/server.js` in Docker, simulated store every 10s for ~12 minutes): 18 duplicate webhook deliveries, 3 phantom restocks, a forged-secret webhook, 15 injected email failures (HTTP 500), a graceful restart, two `docker kill`s during retry backoff and four redeploys onto the same volume. Result: 57 requests, 46 notified, **46 accepted emails, each matched one-to-one to a request; no duplicates, no one left waiting on an in-stock product**, 0 failed. Inbox: [`docs/local-harness-inbox.jpg`](docs/local-harness-inbox.jpg). Checked with `scripts/verify-harness.mjs` (see [Verifying a run](#verifying-a-run)).
 
 ## Run it
 
