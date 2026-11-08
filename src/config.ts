@@ -22,7 +22,24 @@ const EnvSchema = z.object({
     .optional()
     .transform((u) => (u ? u.replace(/\/+$/, '') : undefined)),
   SHOP_URL: z.string().trim().optional(),
+  SHOP_HOSTS: z.string().trim().optional(),
 });
+
+/** "shop.example.com, example.org" -> ["shop.example.com", "example.org"] */
+export function parseHosts(list: string | undefined, shopUrl: string | undefined): string[] {
+  const hosts = (list ?? '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase().replace(/^\*\./, '').replace(/\.$/, ''))
+    .filter((h) => /^[a-z0-9.-]+$/.test(h) && h.includes('.'));
+  if (shopUrl) {
+    try {
+      hosts.push(new URL(shopUrl.replaceAll('{sku}', 'x')).hostname.toLowerCase());
+    } catch {
+      /* invalid SHOP_URL: ignore */
+    }
+  }
+  return [...new Set(hosts)];
+}
 
 export interface Config {
   port: number;
@@ -37,6 +54,11 @@ export interface Config {
   publicUrl: string | undefined;
   /** Product page link template; `{sku}` is replaced. */
   shopUrl: string;
+  /**
+   * Hosts a per-request product link may point at (exact host or any subdomain).
+   * Empty = per-request links are ignored and every email uses `shopUrl`.
+   */
+  shopHosts: string[];
   /** Tunables (not env-driven; overridden in tests). */
   sweepIntervalMs: number;
   staleSendingMs: number;
@@ -67,6 +89,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     emailFrom: e.EMAIL_FROM,
     publicUrl: e.PUBLIC_URL,
     shopUrl: e.SHOP_URL || 'https://shop.example.com/products/{sku}',
+    shopHosts: parseHosts(e.SHOP_HOSTS, e.SHOP_URL),
     ...defaultTunables,
   };
 }

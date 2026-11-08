@@ -341,6 +341,7 @@ describe('pages', () => {
       request: { email: 'x"<b>@example.com', sku: 'A-1', created_at: Date.now(), product_url: 'javascript:alert(1)' },
       product: { sku: 'A-1', name: '<img src=x onerror=alert(1)>', price: 24, currency: 'GBP', image: 'https://i.example.com/a.jpg', quantity: 2, available: true, checkedAt: Date.now() },
       shopUrl: 'https://shop.example.com/p/{sku}',
+      shopHosts: [],
     });
     expect(out.html).not.toContain('<img src=x');
     expect(out.html).not.toContain('javascript:');

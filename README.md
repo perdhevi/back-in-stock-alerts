@@ -37,7 +37,8 @@ Only the brief's variables are needed. Data lives in SQLite under `DATA_DIR` (a 
 | `ADMIN_PASSWORD` | yes | HTTP Basic password for `/admin` (any username) |
 | `DATA_DIR` | no | SQLite directory, default `/data` |
 | `EMAIL_FROM` | no | Default `Back in Stock <alerts@example.com>` |
-| `SHOP_URL` | no | Product link template for the email's button, `{sku}` is replaced. Default `https://shop.example.com/products/{sku}`. If the embed knows the product page (`?url=` or the iframe's referrer) that link wins. |
+| `SHOP_URL` | no | Product link template for the email's button, `{sku}` is replaced. Default `https://shop.example.com/products/{sku}`. |
+| `SHOP_HOSTS` | no | Comma-separated store hosts (subdomains included) that a per-request product link may point at, e.g. `shop.example.com,example.co.uk`. The host of an explicitly set `SHOP_URL` is always allowed. A link from the embed (`?url=` or the iframe's referrer) is used only if it matches; otherwise the email uses `SHOP_URL`. Unset = embed links are ignored. |
 | `PUBLIC_URL` | no | This service's public URL (informational) |
 
 See [`.env.example`](.env.example).
@@ -94,6 +95,7 @@ Embedding:
 - **Low stock:** everyone waiting is notified, even if 3 left and 20 waiting. We can't know who will buy, a missed alert is worse than a late one, and the email says "Only 3 left" and that stock isn't reserved.
 - **Sell-out webhooks** (`quantity: 0`) are recorded without a stock API call; we never email on them.
 - **Rejected deliveries** (`bad_secret`, `invalid`, and duplicates) are logged in a separate `webhook_log` table, not in `webhook_events`. An unauthenticated request with a real event id must not be able to take that id and make the genuine delivery look like a duplicate.
+- **Third-party data in our emails is untrusted content.** Everything is HTML-escaped, and before it reaches an inbox: product names are stripped of control characters and capped at 200 characters; prices must be positive, sane and in a valid ISO currency, otherwise no price is shown; images must be `https` (the client loads them automatically); and the button link only goes to an allowlisted store host (`SHOP_HOSTS`), checked at sign-up and again at send time. Without that last check, anyone could sign up a victim with their own link and have us deliver a phishing email from our domain. Invalid display fields are dropped, not fatal, so a bad name never blocks a real restock.
 - **Secrets** are compared by hashing both sides and using `crypto.timingSafeEqual`, so neither content nor length leaks through timing.
 - **Stock API down during a webhook:** the event is stored as `unverified`, the sender gets `200` (retrying wouldn't help), and the worker re-checks shortly after; the sweeper backs it up.
 
@@ -120,7 +122,7 @@ It fails if any notified request doesn't have exactly one accepted email with it
 
 ## Tests
 
-`npm test`: 22 tests, no network (a local fake plays both the stock API and Resend, honouring `Idempotency-Key` like the harness):
+`npm test`: 32 tests, no network (a local fake plays both the stock API and Resend, honouring `Idempotency-Key` like the harness):
 
 - same `event_id` twice concurrently → one event, one email
 - phantom restock → `not_confirmed`, no email
@@ -133,6 +135,7 @@ It fails if any notified request doesn't have exactly one accepted email with it
 - malformed JSON / bad fields / huge bodies → 400 / 413, never 500
 - sweeper: one stock call per SKU; sold out again → stays pending
 - embed headers and escaping, admin auth + `no-store`, email escaping
+- untrusted content: product links to non-allowlisted, look-alike or credential-in-URL hosts are dropped (and re-checked at send time); hostile stock API fields (5,000-character names, header-injection attempts, £0 prices, bogus currencies, `http` tracking pixels, wrong types) produce a safe email and still confirm the restock
 
 ## What I'd add for real production
 

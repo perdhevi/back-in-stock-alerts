@@ -7,6 +7,7 @@ import { StockApiError, type StockClient, type StockInfo } from './stock.js';
 export interface NotifierOptions {
   emailFrom: string;
   shopUrl: string;
+  shopHosts: readonly string[];
   sweepIntervalMs: number;
   staleSendingMs: number;
   retryBaseMs: number;
@@ -209,7 +210,7 @@ export class Notifier {
     if (claim.changes !== 1) return; // someone else has it, or it's not due
 
     const attempts = row.attempts + 1;
-    const content = renderBackInStockEmail({ request: row, product, shopUrl: this.opts.shopUrl });
+    const content = renderBackInStockEmail({ request: row, product, shopUrl: this.opts.shopUrl, shopHosts: this.opts.shopHosts });
     let result: SendResult;
     try {
       result = await this.resend.send(

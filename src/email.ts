@@ -1,6 +1,6 @@
 import type { RequestRow } from './db.js';
 import type { StockInfo } from './stock.js';
-import { esc, formatDate, formatPrice, safeUrl } from './html.js';
+import { esc, formatDate, formatPrice, isAllowedHost, safeHttpsUrl, safeUrl } from './html.js';
 
 export interface EmailContent {
   subject: string;
@@ -12,11 +12,22 @@ export interface EmailContext {
   request: Pick<RequestRow, 'email' | 'sku' | 'created_at' | 'product_url'>;
   product: StockInfo;
   shopUrl: string;
+  /** Allowed hosts for a per-request product link; see Config.shopHosts. */
+  shopHosts: readonly string[];
 }
 
-export function productLink(request: Pick<RequestRow, 'sku' | 'product_url'>, shopUrlTemplate: string): string {
-  const fromEmbed = request.product_url ? safeUrl(request.product_url, '') : '';
-  if (fromEmbed) return fromEmbed;
+/**
+ * The button link. A per-request link (from the embed) is only used if its
+ * host is allowlisted: otherwise anyone could sign up a victim and have us
+ * email them a link of the attacker's choosing. Checked again here, not just
+ * at sign-up, so rows stored before a config change are covered too.
+ */
+export function productLink(
+  request: Pick<RequestRow, 'sku' | 'product_url'>,
+  shopUrlTemplate: string,
+  shopHosts: readonly string[],
+): string {
+  if (request.product_url && isAllowedHost(request.product_url, shopHosts)) return safeUrl(request.product_url);
   return safeUrl(shopUrlTemplate.replaceAll('{sku}', encodeURIComponent(request.sku)), 'https://shop.example.com/');
 }
 
@@ -25,11 +36,11 @@ export function productLink(request: Pick<RequestRow, 'sku' | 'product_url'>, sh
  * clients actually agree on. Dark-mode aware via color-scheme + a media query
  * for clients that honour <style>; falls back to a light palette otherwise.
  */
-export function renderBackInStockEmail({ request, product, shopUrl }: EmailContext): EmailContent {
+export function renderBackInStockEmail({ request, product, shopUrl, shopHosts }: EmailContext): EmailContent {
   const name = product.name || request.sku;
   const price = formatPrice(product.price, product.currency);
-  const link = productLink(request, shopUrl);
-  const image = product.image ? safeUrl(product.image, '') : '';
+  const link = productLink(request, shopUrl, shopHosts);
+  const image = safeHttpsUrl(product.image); // loaded automatically by the client: https only
   const asked = formatDate(request.created_at);
   const lowStock = product.quantity > 0 && product.quantity <= 5;
 

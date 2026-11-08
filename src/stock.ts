@@ -1,16 +1,50 @@
 import { z } from 'zod';
 import type { DB, ProductRow } from './db.js';
+import { safeHttpsUrl } from './html.js';
 import { log } from './log.js';
 
+// Only the stock fields decide whether the body is usable. Display fields are
+// parsed loosely and cleaned by cleanProductFields(): a bad name must not stop
+// a real restock from being confirmed.
 const StockResponse = z.object({
-  sku: z.string().optional(),
-  name: z.string().nullish(),
-  price: z.coerce.number().nullish(),
-  currency: z.string().nullish(),
-  image: z.string().nullish(),
   quantity: z.coerce.number().default(0),
   in_stock: z.boolean().optional(),
+  name: z.unknown().optional(),
+  price: z.unknown().optional(),
+  currency: z.unknown().optional(),
+  image: z.unknown().optional(),
 });
+
+export const MAX_NAME_LENGTH = 200;
+// C0/C1 control characters plus the line/paragraph separators (code points 0x2028, 0x2029).
+const CONTROL_CHARS = new RegExp('[\\x00-\\x1f\\x7f-\\x9f' + String.fromCharCode(0x2028, 0x2029) + ']+', 'g');
+const MAX_PRICE = 1_000_000;
+
+/**
+ * The stock API's display fields end up in emails sent under our name, so they
+ * are treated as untrusted content: anything that fails a check is dropped
+ * (the email falls back to the SKU, no price, no image) rather than shown.
+ */
+export function cleanProductFields(b: { name?: unknown; price?: unknown; currency?: unknown; image?: unknown }) {
+  let name: string | null = null;
+  if (typeof b.name === 'string') {
+    // Collapse control characters and whitespace runs (no header/line injection), then cap.
+    const n = b.name.replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim();
+    name = n ? (n.length > MAX_NAME_LENGTH ? `${n.slice(0, MAX_NAME_LENGTH - 1).trimEnd()}…` : n) : null;
+  }
+
+  const rawCurrency = typeof b.currency === 'string' ? b.currency.trim().toUpperCase() : null;
+  const currency = rawCurrency && /^[A-Z]{3}$/.test(rawCurrency) ? rawCurrency : null;
+
+  const p = typeof b.price === 'number' ? b.price : typeof b.price === 'string' && b.price.trim() !== '' ? Number(b.price) : NaN;
+  // A price in an unknown currency would be shown as GBP, which would be a lie: drop both.
+  const priceOk = Number.isFinite(p) && p > 0 && p < MAX_PRICE && (currency !== null || b.currency == null);
+  const price = priceOk ? Math.round(p * 100) / 100 : null;
+
+  const image = typeof b.image === 'string' ? safeHttpsUrl(b.image.trim()) || null : null;
+
+  return { name, price, currency: priceOk ? currency : null, image };
+}
 
 export interface StockInfo {
   sku: string;
@@ -110,10 +144,7 @@ export class StockClient {
     const quantity = Number.isFinite(b.quantity) ? Math.max(0, Math.floor(b.quantity)) : 0;
     return {
       sku,
-      name: b.name ?? null,
-      price: b.price ?? null,
-      currency: b.currency ?? null,
-      image: b.image ?? null,
+      ...cleanProductFields(b),
       quantity,
       // Both signals must agree before we believe it.
       available: (b.in_stock ?? quantity > 0) && quantity > 0,
@@ -172,10 +203,8 @@ function emptyInfo(sku: string): StockInfo {
 function rowToInfo(r: ProductRow): StockInfo {
   return {
     sku: r.sku,
-    name: r.name,
-    price: r.price,
-    currency: r.currency,
-    image: r.image,
+    // Re-clean on read: rows cached before a rule change are covered too.
+    ...cleanProductFields({ name: r.name, price: r.price, currency: r.currency, image: r.image }),
     quantity: r.quantity,
     available: r.in_stock === 1 && r.quantity > 0,
     checkedAt: r.checked_at,

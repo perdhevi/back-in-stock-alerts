@@ -4,6 +4,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 import type { Config } from './config.js';
 import { isUniqueViolation, type DB, type RequestRow, type RequestStatus } from './db.js';
+import { isAllowedHost } from './html.js';
 import { log } from './log.js';
 import type { Notifier } from './notifier.js';
 import { createRequest, NewRequestSchema, publicRequest, SKU_RE } from './requests.js';
@@ -157,7 +158,9 @@ export function createApp({ db, config, stock, notifier }: AppDeps): Hono {
       return c.json({ error: 'validation_error', issues }, 400);
     }
 
-    const { created, request } = createRequest(db, parsed.data, wantsHtml ? 'embed' : 'api');
+    // A product link is only kept if it points at an allowlisted store host (see SHOP_HOSTS).
+    const input = { ...parsed.data, product_url: isAllowedHost(parsed.data.product_url, config.shopHosts) ? parsed.data.product_url : undefined };
+    const { created, request } = createRequest(db, input, wantsHtml ? 'embed' : 'api');
 
     // Is it actually in stock right now? Store the request either way and let
     // the worker send the one email (after its own re-check). Bounded wait.

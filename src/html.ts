@@ -16,6 +16,33 @@ export function safeUrl(v: string | null | undefined, fallback = '#'): string {
   }
 }
 
+/** https only, for anything the recipient's client loads automatically (images). */
+export function safeHttpsUrl(v: string | null | undefined): string {
+  if (!v || v.length > 2000) return '';
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' && !u.username && !u.password ? u.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * True if `url` is http(s) and its host is one of `hosts` or a subdomain of one.
+ * "example.com" allows example.com and shop.example.com, not evil-example.com.
+ */
+export function isAllowedHost(url: string | null | undefined, hosts: readonly string[]): boolean {
+  if (!url || hosts.length === 0) return false;
+  try {
+    const u = new URL(url);
+    if ((u.protocol !== 'https:' && u.protocol !== 'http:') || u.username || u.password) return false;
+    const host = u.hostname.toLowerCase().replace(/\.$/, '');
+    return hosts.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
+  }
+}
+
 export function formatPrice(price: number | null, currency: string | null): string | null {
   if (price == null || !Number.isFinite(price)) return null;
   try {

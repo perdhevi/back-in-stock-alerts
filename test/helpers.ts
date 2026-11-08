@@ -28,6 +28,8 @@ export class FakeUpstream {
   emailFailures: { status: number; headers?: Record<string, string> }[] = [];
   /** Make the stock API return this status (e.g. 503) while set. */
   stockDown: number | null = null;
+  /** Per-SKU overrides of the display fields the stock API returns. */
+  productOverrides: Record<string, Record<string, unknown>> = {};
   emails: FakeEmail[] = [];
   emailCalls: { idempotencyKey: string | null; status: number }[] = [];
   url = '';
@@ -71,6 +73,7 @@ export class FakeUpstream {
         image: `https://img.example.com/${sku}.jpg`,
         quantity,
         in_stock: quantity > 0,
+        ...this.productOverrides[sku],
       });
     }
 
@@ -116,6 +119,7 @@ export function testConfig(upstreamUrl: string, overrides: Partial<Config> = {})
     emailFrom: 'Back in Stock <alerts@example.com>',
     publicUrl: undefined,
     shopUrl: 'https://shop.example.com/products/{sku}',
+    shopHosts: ['shop.example.com'],
     ...defaultTunables,
     retryBaseMs: 20,
     sweepIntervalMs: 3_600_000, // tests call sweep() by hand
