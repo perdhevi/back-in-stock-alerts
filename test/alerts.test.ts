@@ -165,6 +165,17 @@ describe('exactly-once sending', () => {
     expect(t.db.prepare('SELECT status, attempts FROM requests').get()).toEqual({ status: 'notified', attempts: 2 });
   });
 
+  it('restart while a retry is in backoff → retried when due, not a sweep interval later', async () => {
+    await subscribe(t, 'gia@example.com', 'NB-2');
+    up.stock['NB-2'] = 3;
+    // Failed once just before the "crash"; due again in 300ms. In-memory timers are gone.
+    t.db.prepare(`UPDATE requests SET attempts=1, next_attempt_at=?, last_error='HTTP 500'`).run(Date.now() + 300);
+    const rebooted = await t.restart();
+    rebooted.notifier.start(); // sweepIntervalMs is 1h in tests, so only the armed timer can deliver it
+    await waitFor(() => up.accepted.length === 1, 2_000);
+    await rebooted.notifier.stop();
+  });
+
   it('4xx from Resend → failed with reason, no retry', async () => {
     await subscribe(t, 'hal@example.com', 'PEN-1');
     up.stock['PEN-1'] = 3;

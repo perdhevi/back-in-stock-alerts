@@ -106,6 +106,16 @@ export class Notifier {
         .all(Date.now())
         .map((r) => (r as { sku: string }).sku);
       for (const sku of skus) this.enqueue(sku);
+      // Retries that fall due before the next sweep get a timer, so a restart
+      // (which loses in-memory timers) doesn't add up to a sweep interval of delay.
+      const now = Date.now();
+      const soon = this.db
+        .prepare(
+          `SELECT sku, MIN(next_attempt_at) AS due FROM requests
+           WHERE status = 'pending' AND next_attempt_at > ? AND next_attempt_at <= ? GROUP BY sku`,
+        )
+        .all(now, now + this.opts.sweepIntervalMs) as { sku: string; due: number }[];
+      for (const { sku, due } of soon) this.enqueue(sku, due - now + 50);
     } catch (err) {
       log.error('sweep_failed', { error: String(err) });
     }
