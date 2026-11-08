@@ -151,3 +151,7 @@ It fails if any notified request doesn't have exactly one accepted email with it
 
 - AI tools used: TODO
 - Time taken: TODO
+
+## License
+
+[MIT](LICENSE)
