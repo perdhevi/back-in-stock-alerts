@@ -151,8 +151,8 @@ It fails if any notified request doesn't have exactly one accepted email with it
 
 ## AI tools and time
 
-- AI tools used: TODO
-- Time taken: TODO
+- AI tools used: Claude Code (Claude Opus 5.5) in the Claude desktop app, for implementation, tests, Docker and the harness runs. I directed the work, made the design and product decisions, and ran the security review.
+- Time taken: about 25 minutes to a complete, tested, Dockerised submission; 1h 18m in total, including security hardening and the 10-minute hosted harness run.
 
 ## License
 
