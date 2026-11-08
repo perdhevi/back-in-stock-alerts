@@ -9,6 +9,8 @@ export type EmbedState =
 export interface EmbedView {
   sku: string | undefined;
   productName: string | null;
+  /** true = a recent stock reading says sold out; undefined = unknown. */
+  soldOut?: boolean;
   productUrl: string | undefined;
   accent: string;
   nonce: string;
@@ -61,7 +63,11 @@ export function renderEmbed(v: EmbedView): string {
   const showForm = s.kind === 'form';
   const error = s.kind === 'form' ? s.error : undefined;
   const email = s.kind === 'form' ? s.email ?? '' : '';
-  const heading = v.productName ? `Get an email when it’s back` : 'Get an email when it’s back';
+  const heading = 'Get an email when it’s back';
+  const what = v.productName ? esc(v.productName) : 'this item';
+  const intro = v.soldOut
+    ? `${v.productName ? esc(v.productName) : 'This item'} is sold out right now. Leave your email and we’ll let you know the moment it’s back.`
+    : `Leave your email and we’ll let you know the moment ${what} is back in stock.`;
 
   return `<!doctype html>
 <html lang="en">
@@ -127,7 +133,7 @@ ${
     <span class="ico">${icons.bell}</span>
     <div>
       <h1>${heading}</h1>
-      <p class="sub">${v.productName ? `${esc(v.productName)} is sold out right now.` : 'This item is sold out right now.'} Leave your email and we’ll let you know the moment it’s back.</p>
+      <p class="sub">${intro}</p>
     </div>
   </div>
   <form id="f" method="post" action="/api/requests" novalidate>

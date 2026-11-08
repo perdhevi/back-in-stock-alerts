@@ -78,15 +78,19 @@ export function createApp({ db, config, stock, notifier }: AppDeps): Hono {
   const embedCsp = (nonce: string) =>
     `default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; script-src 'nonce-${nonce}'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors *`;
 
-  const productName = async (sku: string | undefined): Promise<string | null> => {
-    if (!sku) return null;
-    const cached = stock.product(sku);
-    if (cached) return cached.name;
-    try {
-      return (await stock.check(sku, 'embed', { retries: 0 })).name;
-    } catch {
-      return null;
+  /** Product name + whether a recent reading says it's sold out. One stock call at most, then cached. */
+  const productInfo = async (sku: string | undefined): Promise<{ name: string | null; soldOut?: boolean }> => {
+    if (!sku) return { name: null };
+    let info = stock.product(sku);
+    if (!info) {
+      try {
+        info = await stock.check(sku, 'embed', { retries: 0 });
+      } catch {
+        return { name: null };
+      }
     }
+    const fresh = Date.now() - info.checkedAt < 10 * 60_000;
+    return { name: info.name, soldOut: fresh && !info.available ? true : undefined };
   };
 
   const sendEmbed = async (
@@ -97,7 +101,8 @@ export function createApp({ db, config, stock, notifier }: AppDeps): Hono {
     const nonce = randomBytes(16).toString('base64');
     c.header('Content-Security-Policy', embedCsp(nonce));
     c.header('Cache-Control', 'no-store');
-    const html = renderEmbed({ ...opts, productName: await productName(opts.sku), nonce });
+    const p = await productInfo(opts.sku);
+    const html = renderEmbed({ ...opts, productName: p.name, soldOut: p.soldOut, nonce });
     return c.html(html, status);
   };
 

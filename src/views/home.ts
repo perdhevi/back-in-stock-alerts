@@ -17,8 +17,8 @@ export function renderHome({ nonce }: { nonce: string }): string {
 .note{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin-bottom:24px}
 .note code{font-size:12px}
 .grid{display:grid;grid-template-columns:1fr;gap:28px}
-@media (min-width:780px){.grid{grid-template-columns:1.1fr 1fr}}
-.img{aspect-ratio:1;border-radius:16px;background:#e9e7e1 center/cover no-repeat;background-image:url("https://picsum.photos/seed/HOOD-FLC-GRY-M/900/900")}
+@media (min-width:820px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+.img{aspect-ratio:1;max-height:520px;width:100%;border-radius:16px;background:#e9e7e1 center/cover no-repeat;background-image:url("https://picsum.photos/seed/HOOD-FLC-GRY-M/900/900")}
 h1{font-size:28px;line-height:1.15;margin:4px 0 8px;letter-spacing:-.02em}
 .price{font-size:20px;margin:0 0 6px}.so{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#b42318;margin-bottom:18px}
 .crumb{font-size:13px;color:var(--muted)}
