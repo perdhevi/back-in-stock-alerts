@@ -129,7 +129,7 @@ h1{font-size:18px;margin:0;letter-spacing:-.01em}
 .sub{color:var(--muted);font-size:13px;margin:0}
 h2{font-size:15px;margin:32px 0 10px;display:flex;align-items:baseline;gap:8px}
 h2 .dim{font-weight:400;font-size:13px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;margin-bottom:18px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
 .stat .k{color:var(--muted);font-size:12px;font-weight:500}
 .stat .v{font-size:24px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -150,7 +150,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
 tbody tr:hover td{background:color-mix(in srgb,var(--head) 70%,transparent)}
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.email{font-weight:550;word-break:break-all}
+.email{font-weight:550;overflow-wrap:anywhere}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 .dim{color:var(--dim)}.small{font-size:12px;margin-top:2px}
 td.err{max-width:260px;color:var(--bad);font-size:12.5px}
@@ -192,8 +192,8 @@ time{white-space:nowrap}
   ${stat('Sending', v.counts.sending, 'sending')}
   ${stat('Notified', v.counts.notified, 'notified')}
   ${stat('Failed', v.counts.failed, 'failed')}
-  ${stat('Emails sent (24h)', v.emailsToday, '')}
-  ${stat('Stock API calls (24h)', v.stockCalls24h, '')}
+  ${stat('Sent (24h)', v.emailsToday, '')}
+  ${stat('Stock checks (24h)', v.stockCalls24h, '')}
 </section>
 
 <div class="bar">
