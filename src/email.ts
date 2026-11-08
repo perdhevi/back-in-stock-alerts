@@ -57,6 +57,7 @@ export function renderBackInStockEmail({ request, product, shopUrl }: EmailConte
   @media (prefers-color-scheme:dark){
     .bg{background:#0f1012!important}
     .card{background:#1a1c1f!important}
+    .panel{background:#232528!important}
     .fg{color:#f2f2f0!important}
     .muted{color:#a3a6aa!important}
     .rule{border-color:#2c2f33!important}
@@ -76,28 +77,32 @@ export function renderBackInStockEmail({ request, product, shopUrl }: EmailConte
     </td></tr>
     <tr><td>
       <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:16px;overflow:hidden">
-        ${
-          image
-            ? `<tr><td style="padding:0"><a href="${esc(link)}"><img src="${esc(image)}" width="600" alt="${esc(name)}" style="width:100%;max-width:600px;height:auto;background:#e9e7e1"></a></td></tr>`
-            : ''
-        }
-        <tr><td class="px" style="padding:32px 40px 8px">
-          ${
-            lowStock
-              ? `<p style="margin:0 0 14px"><span class="pill" style="display:inline-block;background:#fff4d6;color:#7a5600;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px">Only ${esc(product.quantity)} left</span></p>`
-              : ''
-          }
-          <h1 class="h1 fg" style="margin:0 0 8px;font-size:30px;line-height:36px;color:#111214;font-weight:700">Good news: it&rsquo;s back.</h1>
-          <p class="fg" style="margin:0 0 4px;font-size:18px;line-height:26px;color:#111214;font-weight:600">${esc(name)}</p>
-          ${price ? `<p class="muted" style="margin:0;font-size:16px;line-height:24px;color:#5c5f63">${esc(price)}</p>` : ''}
+        <tr><td class="px" style="padding:36px 40px 0">
+          <h1 class="h1 fg" style="margin:0 0 10px;font-size:30px;line-height:36px;color:#111214;font-weight:700">Good news: it&rsquo;s back.</h1>
+          <p class="muted" style="margin:0;font-size:16px;line-height:24px;color:#3d4045">You asked us to tell you when this was back in stock, so here we are. Popular items tend to go quickly, so if you still want it, now&rsquo;s the time.</p>
         </td></tr>
-        <tr><td class="px" style="padding:16px 40px 8px">
-          <p class="muted" style="margin:0;font-size:16px;line-height:24px;color:#3d4045">You asked us to let you know when this was back in stock, so here we are. Popular items tend to go quickly, so if you still want it, now&rsquo;s the time.</p>
+        <tr><td class="px" style="padding:24px 40px 0">
+          <table role="presentation" class="panel" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f3ef;border-radius:12px">
+            ${
+              image
+                ? `<tr><td align="center" style="padding:24px 24px 4px"><a href="${esc(link)}"><img src="${esc(image)}" width="280" height="280" alt="${esc(name)}" style="width:280px;max-width:100%;height:auto;border-radius:10px;background:#e9e7e1"></a></td></tr>`
+                : ''
+            }
+            <tr><td align="center" style="padding:16px 24px 22px">
+              <p class="fg" style="margin:0 0 4px;font-size:18px;line-height:26px;color:#111214;font-weight:600">${esc(name)}</p>
+              ${price ? `<p class="muted" style="margin:0;font-size:16px;line-height:24px;color:#5c5f63">${esc(price)}</p>` : ''}
+              ${
+                lowStock
+                  ? `<p style="margin:10px 0 0"><span class="pill" style="display:inline-block;background:#fff4d6;color:#7a5600;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px">Only ${esc(product.quantity)} left</span></p>`
+                  : ''
+              }
+            </td></tr>
+          </table>
         </td></tr>
-        <tr><td class="px" style="padding:24px 40px 36px">
+        <tr><td class="px" align="center" style="padding:24px 40px 36px">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
             <td class="btn" align="center" bgcolor="#111214" style="border-radius:10px;background:#111214">
-              <a href="${esc(link)}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:700;color:#ffffff;border-radius:10px">Shop now&nbsp;&rarr;</a>
+              <a href="${esc(link)}" style="display:inline-block;padding:15px 44px;font-size:16px;font-weight:700;color:#ffffff;border-radius:10px">Shop now&nbsp;&rarr;</a>
             </td>
           </tr></table>
         </td></tr>
